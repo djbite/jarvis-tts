@@ -2,7 +2,5 @@
   "name": "jarvis-tts",
   "version": "1.0.0",
   "type": "module",
-  "dependencies": {
-    "msedge-tts": "^2.0.9"
-  }
+  "dependencies": {}
 }
