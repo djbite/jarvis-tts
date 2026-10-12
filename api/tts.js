@@ -7,22 +7,37 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const text = req.query.text || "Привет, сэр. Все системы функционируют нормально.";
-  const lang = req.query.lang || "ru";
+  const text = req.query.text || "Привет, сэр. Все системы функционируют в штатном режиме.";
+  const voiceId = "pNInz6obpgDQGcFmaJgB"; // Adam: глубокий мужской баритон
+  const apiKey = "sk_6d019394a354bb335787a50362b13453166fc833deccb20d";
 
   try {
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
-    const response = await fetch(ttsUrl, {
+    const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      }
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.8
+        }
+      })
     });
 
-    const arrayBuffer = await response.arrayBuffer();
+    if (!upstream.ok) {
+      const err = await upstream.text();
+      return res.status(upstream.status).send("ElevenLabs error: " + err);
+    }
+
+    const audioBuffer = await upstream.arrayBuffer();
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=3600");
-    return res.status(200).send(Buffer.from(arrayBuffer));
+    return res.status(200).send(Buffer.from(audioBuffer));
   } catch (err) {
     return res.status(500).send("Error: " + err.message);
   }
