@@ -7,27 +7,23 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const text = req.query.text || "Привет, сэр. Джарвис готов к работе.";
-  const voice = req.query.voice || "ru-RU-DmitryNeural";
+  const text = req.query.text || "Привет, сэр. Все системы функционируют нормально.";
+  const lang = req.query.lang || "ru";
 
   try {
-    const { MsEdgeTTS, OUTPUT_FORMAT } = await import("msedge-tts");
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-
-    const { audioStream } = tts.toStream(text);
-
-    const audioBuffer = await new Promise((resolve, reject) => {
-      const chunks = [];
-      audioStream.on("data", (chunk) => chunks.push(chunk));
-      audioStream.on("end", () => resolve(Buffer.concat(chunks)));
-      audioStream.on("error", (err) => reject(err));
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+    const response = await fetch(ttsUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      }
     });
+
+    const arrayBuffer = await response.arrayBuffer();
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=3600");
-    return res.status(200).send(audioBuffer);
+    return res.status(200).send(Buffer.from(arrayBuffer));
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).send("Error: " + err.message);
   }
 }
