@@ -15,19 +15,19 @@ export default async function handler(req, res) {
     const tts = new MsEdgeTTS();
     await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
-    // Дожидаемся полного получения аудиопотока
+    const { audioStream } = tts.toStream(text);
+
     const audioBuffer = await new Promise((resolve, reject) => {
       const chunks = [];
-      const stream = tts.toStream(text);
-      stream.on("data", (chunk) => chunks.push(chunk));
-      stream.on("end", () => resolve(Buffer.concat(chunks)));
-      stream.on("error", (err) => reject(err));
+      audioStream.on("data", (chunk) => chunks.push(chunk));
+      audioStream.on("end", () => resolve(Buffer.concat(chunks)));
+      audioStream.on("error", (err) => reject(err));
     });
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "public, max-age=3600");
     return res.status(200).send(audioBuffer);
   } catch (err) {
-    return res.status(500).json({ error: err.message, stack: err.stack });
+    return res.status(500).json({ error: err.message });
   }
 }
