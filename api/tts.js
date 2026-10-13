@@ -8,29 +8,20 @@ export default async function handler(req, res) {
   }
 
   const text = req.query.text || "Привет, сэр. Все системы функционируют в штатном режиме.";
-  const voiceId = "pNInz6obpgDQGcFmaJgB"; // Adam: глубокий мужской баритон
-  const apiKey = "sk_6d019394a354bb335787a50362b13453166fc833deccb20d";
+  const lang = req.query.lang || "ru";
 
   try {
-    const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: "POST",
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+
+    const upstream = await fetch(ttsUrl, {
       headers: {
-        "xi-api-key": apiKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text: text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.8
-        }
-      })
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://translate.google.com/"
+      }
     });
 
     if (!upstream.ok) {
-      const err = await upstream.text();
-      return res.status(upstream.status).send("ElevenLabs error: " + err);
+      return res.status(upstream.status).send("TTS error: " + upstream.status);
     }
 
     const audioBuffer = await upstream.arrayBuffer();
